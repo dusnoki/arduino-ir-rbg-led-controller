@@ -4,7 +4,7 @@ int redPin = 10;
 int greenPin = 9;
 int bluePin = 6;
 int intensity = 10;
-int speedValue = 10;
+int speedValue = 5;
 int currentColors[] = {0, 0, 0};
 bool customLoop = false;
 
