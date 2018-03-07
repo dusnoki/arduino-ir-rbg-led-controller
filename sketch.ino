@@ -1,18 +1,19 @@
 .#include <IRremote.h>
 int recvPin = 8; // IR Receiver - Arduino Pin Number 8
-int redPin = 10;
-int greenPin = 9;
-int bluePin = 6;
-int intensity = 10;
-int speedValue = 5;
-int currentColors[] = {0, 0, 0};
-bool customLoop = false;
+int redPin = 10; // RED Output Pin
+int greenPin = 9; // GREEN Output Pin
+int bluePin = 6; // BLUE Output Pin
+int intensity = 10; // Intensity variable
+int speedValue = 5; // Speed Variable
+int currentColors[] = {0, 0, 0}; // Current Color outputed variable (black by default)
+bool customLoop = false; // Variable telling us we are in a custom animation loop
 
-unsigned long previousMillis = 0;
+unsigned long previousMillis = 0; // variable for the delay function
 
 IRrecv irrecv(recvPin);
 decode_results results;
 
+// Defining hex codes for the remote
 #define ON_CODE           0xFFE01F
 #define OFF_CODE          0xFF609F
 #define INTENSITY_UP_CODE 0xFFA05F
@@ -38,6 +39,7 @@ decode_results results;
 #define FADE_CODE         0xFFD827
 #define SMOOTH_CODE       0xFFC837
 
+// defining the avaialble colors one by one
 int BLACK_COLOR[3] = {0, 0, 0};
 int RED_COLOR[3] = {255, 0, 0};
 int GREEN_COLOR[3] = {0, 255, 0};
@@ -56,9 +58,10 @@ int YELLOW_COLOR[3] = {255, 255, 0};
 int BLUE_BABY_COLOR[3] = {51, 153, 255};
 int PINK_COLOR[3] = {255, 102, 178};
 
+// defining all the available remote codes in an array
 int AVAILABLE_CODES[24] = {ON_CODE, OFF_CODE, INTENSITY_UP_CODE, INTENSITY_DN_CODE, RED_CODE, GREEN_CODE, BLUE_CODE, WHITE_CODE, ORANGE_CODE, TURQUOISE_CODE, NAVY_CODE, BROWN_CODE, TEAL_CODE, PURPLE_DARK_CODE, ORANGE_LIGHT_CODE, BLUE_LIGHT_CODE, PINK_DARK_CODE, YELLOW_CODE, BLUE_BABY_CODE, PINK_CODE, FLASH_CODE, FADE_CODE, SMOOTH_CODE, STROBE_CODE};
-// int AVAILABLE_COLORS[16][3] = {{RED_COLOR}, {GREEN_COLOR}, {BLUE_COLOR}, {WHITE_COLOR}, {ORANGE_COLOR}, {TURQUOISE_COLOR}, {NAVY_COLOR}, {BROWN_COLOR}, {TEAL_COLOR}, {PURPLE_DARK_COLOR}, {ORANGE_LIGHT_COLOR}, {BLUE_LIGHT_COLOR}, {PINK_DARK_COLOR}, {YELLOW_COLOR}, {BLUE_BABY_COLOR}, {PINK_COLOR}};
 
+// defining all the available colors in an array
 int AVAILABLE_COLORS[16][3] = {{255, 0, 0}, {0, 255, 0}, {0, 0, 255}, {255, 255, 255}, {255, 128, 0}, {0, 255, 128}, {0, 76, 153}, {153, 76, 0}, {0, 102, 102}, {102, 0, 51}, {255, 153, 51}, {0, 255, 255}, {255, 0, 127}, {255, 255, 0}, {51, 153, 255}, {255, 102, 158}} ;
 
 void setup() {
@@ -69,6 +72,7 @@ void setup() {
   pinMode(bluePin, OUTPUT);
 }
 
+// function for interpreting the incoming code and eighter setting a fixed color or starting a custom loop function
 void interpretRemoteCode(int code) {
   int randomColor[3] = {random(256), random(256), random(256)};
   switch (code) {
@@ -99,6 +103,7 @@ void interpretRemoteCode(int code) {
   }
 }
 
+// raise the intensity of light or the speed of animation
 void raiseIntensity() {
   if (!customLoop) {
     if (intensity <= 9) {
@@ -109,6 +114,7 @@ void raiseIntensity() {
   }
 }
 
+// lower the intensity of light or the speed of animation
 void lowerIntensity() {
   if (!customLoop) {
     if (intensity >= 2) {
@@ -119,6 +125,7 @@ void lowerIntensity() {
   }
 }
 
+// helper function to check if a value is present in an array
 int existsInArray(int compareValue, int arrayName[], int arraySize) {
   for (int x = 0; x < arraySize; x = x + 1) {
     if (arrayName[x] == compareValue) {
@@ -128,12 +135,14 @@ int existsInArray(int compareValue, int arrayName[], int arraySize) {
   return false;
 }
 
+// set the currentColors variable
 void setColor(int colors[]) {
   currentColors[0] = colors[0];
   currentColors[1] = colors[1];
   currentColors[2] = colors[2];
 }
 
+// calculate the intensity and send the current color out via the output pins
 void sendColor()
 {
   if (customLoop == false) {
@@ -152,6 +161,7 @@ void sendColor()
   }
 }
 
+// check for a code from the remote every 100 milliseconds
 void loop() {
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= 100) {
@@ -160,6 +170,7 @@ void loop() {
   }
 }
 
+// decode remote controll code and if found in the array of available codes interpret it
 void findCode() {
   if (irrecv.decode(&results)) {
     if (existsInArray(results.value, AVAILABLE_CODES, 24)) {
@@ -176,35 +187,40 @@ void findCode() {
   }
 }
 
-int returnFoundCode() {
-
-}
-
+// custom flashing function
 void flash() {
-  customLoop = true;
+  customLoop = true; // set the variable so that the program knows we are in a custom animation loop
   unsigned long previousMillis = 0;
-  while (customLoop) {
-    if (irrecv.decode(&results)) {
+  while (customLoop) { // while we are still in the custom animation loop
+    if (irrecv.decode(&results)) { // check for incomming ir code and if found exit the loop and interpret the code
       if (existsInArray(results.value, AVAILABLE_CODES, 24) && results.value != INTENSITY_UP_CODE && results.value !=  INTENSITY_DN_CODE && results.value != FLASH_CODE) {
         Serial.println("return break");
         return; break;
         interpretRemoteCode(results.value);
-      } else if (results.value == INTENSITY_UP_CODE) {
-        raiseIntensity();
+      } else if (results.value == INTENSITY_UP_CODE) { // if the code is to raise or lower the speed
+        raiseIntensity();                               // raise the speed
       } else if (results.value == INTENSITY_DN_CODE) {
-        lowerIntensity();
+        lowerIntensity();                               // or lower the speed
       }
       irrecv.resume();
     }
-    int randomNumber = random(16);
+    int randomNumber = random(16); // get a random number from 0 to 16
+    
+    // set temporary variales for the red, green and blue values
     int red = AVAILABLE_COLORS[randomNumber][0];
     int green = AVAILABLE_COLORS[randomNumber][1];
     int blue = AVAILABLE_COLORS[randomNumber][2];
     unsigned long currentMillis = millis();
+    
+    // set a X animation delay from 200 to 3000 milliseconds based on the speed variable
     int mappedSpeed = map(speedValue, 10, 1, 200, 3000);
+    
+    // every X milliseconds
     if (currentMillis - previousMillis >= mappedSpeed) {
       previousMillis = currentMillis;
-      analogWrite(redPin, red); // Sends PWM signal to the Red pin
+      
+      // send the color variables through the digital ouput pins 
+      analogWrite(redPin, red);
       analogWrite(greenPin, green);
       analogWrite(bluePin, blue);
     }
